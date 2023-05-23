@@ -32,8 +32,32 @@ print_diagnostic(#{severity := Severity, message := Message, stacktrace := Stack
       false ->
         [["\n  ", 'Elixir.Exception':format_stacktrace_entry(E)] || E <- Stacktrace]
     end,
-  io:put_chars(standard_error, [prefix(Severity), Message, Location, "\n\n"]),
+
+  Style = fancy,
+
+
+  case Style of
+    fancy ->
+      #{position := Pos, file := F} = Diagnostic,
+      io:format("~p~n", [Pos]),
+      Padding = lists:duplicate(Pos - 1, " "),
+      SourceLine = get_source_line(F, Pos), % TODO: get line (it seems that we cannot get the line when in modules)
+      io:put_chars(standard_error, [prefix(Severity), Message, Location, "\n\n", SourceLine, "\n", Padding, "^-- ", Message, "\n\n"]);
+
+    standard ->
+      io:put_chars(standard_error, [prefix(Severity), Message, Location, "\n\n"])
+  end,
+
   Diagnostic.
+
+% TODO: figure out proper way to get file content from compiler internals
+get_source_line(File, LineNumber) -> 
+  {ok, Data} = file:read_file(File),
+  Lines = binary:split(Data, [<<"\r\n">>, <<"\n">>], [global]),
+  % TODO: figure out how to properly parse it
+  % FilteredLines = lists:filter(fun(Line) -> Line /= <<>> end, Lines),
+  % io:format("~p~n", [FilteredLines, LineNumber]),
+  lists:nth(LineNumber, Lines).
 
 emit_diagnostic(Severity, Position, File, Message, Stacktrace) ->
   Diagnostic = #{
