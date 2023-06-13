@@ -252,8 +252,11 @@ prefix(error) ->
   end.
 
 env_format(Meta, #{file := EnvFile} = E) ->
-  {File, Position} = meta_location(Meta, EnvFile),
-  Line = ?line(Position),
+  {MetaFile, Position} = meta_location(Meta, EnvFile),
+  {File, Line} = case {MetaFile, lists:keyfind(file, 1, Meta)} of 
+    {<<"nofile">>, {file, {NF, L}}} -> {NF, L};
+     _ -> {MetaFile, ?line(Position)}
+  end,
 
   Stacktrace =
     case E of

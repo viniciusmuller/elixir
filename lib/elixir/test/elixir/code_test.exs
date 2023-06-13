@@ -63,6 +63,20 @@ defmodule CodeTest do
                end)
     end
 
+    test "preserves module @file on unused function warning" do
+      sample = """
+      defmodule SampleZero do
+        @file "foo-bar.ex"
+
+        defp bar, do: 1
+      end
+      """
+
+      assert ExUnit.CaptureIO.capture_io(:stderr, fn ->
+        Code.eval_string(sample)
+      end) =~ "foo-bar.ex"
+    end
+
     test "includes column information on unused aliases" do
       sample = """
       defmodule CodeTest.UnusedAlias do
